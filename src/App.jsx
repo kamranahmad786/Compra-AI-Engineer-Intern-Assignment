@@ -6,7 +6,9 @@ import LayerTree from './components/LayerTree';
 import Inspector from './components/Inspector';
 import { initialDesignJson } from './data/designJson';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL !== undefined
+  ? import.meta.env.VITE_API_URL
+  : (import.meta.env.PROD ? '' : 'http://localhost:3001');
 
 function App() {
   const [designJson, setDesignJson] = useState(initialDesignJson);
