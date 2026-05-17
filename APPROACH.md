@@ -58,3 +58,30 @@ If an element is moved, resized, or restyled, the backend logs a friendly messag
 *   *Changed "Instagram Post" dimensions to 1080×1920*
 
 This is displayed directly inside the chat bubbles as clear visual success indicators!
+
+---
+
+## 🛠️ Advanced Architectural Features
+
+### 1. Robust Multi-Model Fallback Chain
+To ensure 100% operational uptime and bypass strict Google API rate limits or quota caps on the free tier (like the common `429 Too Many Requests` on `gemini-2.0-flash` free-tier), the Express server implements an automated model resilience chain.
+* If a model call fails, the server automatically traverses a list of alternative endpoints in real time: `gemini-3-flash-preview` ➔ `gemini-2.5-flash` ➔ `gemini-flash-latest` ➔ `gemini-2.0-flash`.
+* This fallback is transparent to the user and guarantees instantaneous response delivery under heavy load.
+
+### 2. Figma-Style Design Studio & Interactive Inspector
+Rather than a static mockup visualizer, the client workspace was transformed into a premium design studio dashboard:
+* **Interactive Canvas Selectors**: Hovering or clicking elements inside the graphic preview canvas highlights them with a Figma-style dashed boundary border and corner resize handles.
+* **Dual Rendering Modes**: 
+  * *Mockup Mode*: Renders full assets, styling, and color overlays for high-fidelity representation.
+  * *Blueprint Mode*: Translates layers into an architect's blueprint style using transparent containers, intersecting wireframe diagonal guides (`X`), and typography size indicators.
+* **Live Properties Inspector (Specs Panel)**: Selecting any node enables manual parameter overrides (coordinates, text content, font sizes, style values, background fills) which automatically recalculate normalized ratios in real time.
+* **Revision Timeline**: Logs a session audit log tracking every user prompt and its structural changes.
+
+### 3. Custom SVG Brand Logo & Favicon
+Designed a custom vector SVG brand identity for **Compra AI Layout Studio** representing the synthesis of layout bounding frames with an AI spark. The asset is linked directly as an SVG favicon in the browser tab and rendered natively in the top navigation bar.
+
+### 4. Unified Production Build (Zero-CORS Architecture)
+To eliminate CORS configuration issues in cloud deployments and minimize hosting costs:
+* In production, the Express server acts as a unified static web host, serving the pre-compiled Vite React build directly from the `/dist` directory.
+* SPA client-side routes fallback automatically to `index.html`.
+* The client API endpoints dynamically switch to relative paths when running in production, resulting in a single deployment target suitable for 1-click cloud launching on platforms like Render or Railway.
