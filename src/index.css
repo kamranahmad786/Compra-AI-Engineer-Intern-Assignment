@@ -113,16 +113,16 @@ html, body {
 .header-logo {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
-  background: linear-gradient(135deg, var(--accent-primary), #d946ef);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 800;
-  color: white;
-  box-shadow: var(--shadow-glow);
 }
+
+.brand-logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.2));
+}
+
 
 .header-breadcrumbs {
   display: flex;

@@ -185,7 +185,7 @@ function App() {
       {/* Sleek Enterprise Top Header */}
       <header className="app-header">
         <div className="header-brand">
-          <div className="header-logo">C</div>
+          <img src="/compra-logo.svg" alt="Compra Logo" className="brand-logo-img" />
           <div className="header-breadcrumbs">
             <span className="breadcrumb-root">Projects</span>
             <span className="breadcrumb-slash">/</span>
