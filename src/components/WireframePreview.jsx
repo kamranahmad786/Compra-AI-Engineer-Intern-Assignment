@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
-export default function WireframePreview({ designJson }) {
+export default function WireframePreview({ designJson, selectedNodeId, onSelectNode, visualMode = 'mockup' }) {
+  const [zoom, setZoom] = useState(1);
+
   const artboard = useMemo(() => {
     if (!designJson?.nodes) return null;
     return Object.values(designJson.nodes).find(n => n.type === 'artboard');
@@ -21,52 +23,85 @@ export default function WireframePreview({ designJson }) {
     );
   }
 
-  // Calculate scale to fit the preview area
-  const maxPreviewWidth = 520;
-  const maxPreviewHeight = 600;
-  const scaleX = maxPreviewWidth / artboard.width;
-  const scaleY = maxPreviewHeight / artboard.height;
-  const scale = Math.min(scaleX, scaleY, 1);
+  // Calculate base scale to fit the preview container
+  const baseScaleWidth = 560 / artboard.width;
+  const baseScaleHeight = 580 / artboard.height;
+  const baseScale = Math.min(baseScaleWidth, baseScaleHeight, 1);
+  const currentScale = baseScale * zoom;
 
-  const canvasWidth = artboard.width * scale;
-  const canvasHeight = artboard.height * scale;
+  const canvasWidth = artboard.width * currentScale;
+  const canvasHeight = artboard.height * currentScale;
 
   const renderElement = (node) => {
     if (!node) return null;
 
+    const isSelected = selectedNodeId === node.id;
+    
+    // Position bounding box
     const style = {
-      left: `${Math.max(0, node.x) * scale}px`,
-      top: `${Math.max(0, node.y) * scale}px`,
-      width: `${node.width * scale}px`,
-      height: `${node.height * scale}px`,
+      left: `${node.x * currentScale}px`,
+      top: `${node.y * currentScale}px`,
+      width: `${node.width * currentScale}px`,
+      height: `${node.height * currentScale}px`,
+      zIndex: node.name === 'Background.png' ? 1 : 2,
+    };
+
+    const handleElementClick = (e) => {
+      e.stopPropagation();
+      if (onSelectNode) {
+        onSelectNode(node.id);
+      }
     };
 
     if (node.type === 'image') {
+      const isBackground = node.name === 'Background.png';
+      
       return (
         <div
           key={node.id}
-          className="wireframe-element image-element"
+          className={`canvas-element image-element ${isSelected ? 'selected' : ''} ${visualMode}`}
           style={style}
-          title={`${node.name} (${Math.round(node.width)}×${Math.round(node.height)})`}
+          onClick={handleElementClick}
         >
-          <span className="element-label">{node.name}</span>
-          <img
-            src={node.data?.sourceUrl}
-            alt={node.name}
-            loading="lazy"
-            crossOrigin="anonymous"
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.parentElement.style.background = 'rgba(6, 182, 212, 0.1)';
-              e.target.parentElement.style.border = '1px dashed rgba(6, 182, 212, 0.3)';
-            }}
-          />
+          {isSelected && <div className="selection-border" />}
+          
+          {visualMode === 'mockup' ? (
+            <img
+              src={node.data?.sourceUrl}
+              alt={node.name}
+              loading="lazy"
+              crossOrigin="anonymous"
+              style={{ objectFit: node.data?.fit || 'cover' }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentElement.classList.add('error-image');
+              }}
+            />
+          ) : (
+            <div className="wireframe-blueprint-image">
+              <svg className="blueprint-cross" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <line x1="0" y1="0" x2="100" y2="100" />
+                <line x1="100" y1="0" x2="0" y2="100" />
+              </svg>
+              <span className="blueprint-label">🖼️ {node.name}</span>
+            </div>
+          )}
+          
+          {!isBackground && <span className="canvas-element-label">{node.name}</span>}
+          {isSelected && (
+            <>
+              <div className="resize-handle nw" />
+              <div className="resize-handle ne" />
+              <div className="resize-handle sw" />
+              <div className="resize-handle se" />
+            </>
+          )}
         </div>
       );
     }
 
     if (node.type === 'text') {
-      const fontSize = (node.style?.visual?.fontSize || 16) * scale;
+      const fontSize = (node.style?.visual?.fontSize || 16) * currentScale;
       const color = node.style?.visual?.color?.value || '#FFFFFF';
       const fontWeight = node.style?.visual?.fontWeight || 400;
       const fontStyle = node.style?.visual?.fontStyle || 'normal';
@@ -75,19 +110,37 @@ export default function WireframePreview({ designJson }) {
       return (
         <div
           key={node.id}
-          className="wireframe-element text-element"
+          className={`canvas-element text-element ${isSelected ? 'selected' : ''} ${visualMode}`}
           style={{
             ...style,
             fontSize: `${Math.max(fontSize, 6)}px`,
-            color: color.length === 5 ? color + 'F' : color,
+            color: visualMode === 'mockup' ? color : 'var(--text-primary)',
             fontWeight,
             fontStyle,
             fontFamily: `${fontFamily}, sans-serif`,
           }}
-          title={`${node.data?.content} (font: ${node.style?.visual?.fontSize}px)`}
+          onClick={handleElementClick}
         >
-          <span className="element-label">{node.name}: {node.data?.content?.substring(0, 20)}</span>
-          {node.data?.content}
+          {isSelected && <div className="selection-border" />}
+          
+          {visualMode === 'mockup' ? (
+            node.data?.content
+          ) : (
+            <div className="wireframe-blueprint-text">
+              <span className="blueprint-text-line">{node.data?.content}</span>
+              <span className="blueprint-text-spec">📝 {node.style?.visual?.fontSize}px</span>
+            </div>
+          )}
+          
+          <span className="canvas-element-label">{node.name}</span>
+          {isSelected && (
+            <>
+              <div className="resize-handle nw" />
+              <div className="resize-handle ne" />
+              <div className="resize-handle sw" />
+              <div className="resize-handle se" />
+            </>
+          )}
         </div>
       );
     }
@@ -95,24 +148,34 @@ export default function WireframePreview({ designJson }) {
     if (node.type === 'shape') {
       const fillColor = node.style?.visual?.fill?.value || 'transparent';
       const strokeColor = node.style?.visual?.stroke?.value || 'transparent';
-      const strokeWidth = (node.style?.visual?.strokeWidth || 0) * scale;
+      const strokeWidth = (node.style?.visual?.strokeWidth || 0) * currentScale;
       const isCircle = node.data?.shapeType === 'circle';
 
       return (
         <div
           key={node.id}
-          className="wireframe-element shape-element"
+          className={`canvas-element shape-element ${isSelected ? 'selected' : ''} ${visualMode}`}
           style={{
             ...style,
-            backgroundColor: node.style?.visual?.fill?.type === 'solid' ? fillColor : 'transparent',
-            border: node.style?.visual?.stroke?.type === 'solid' 
+            backgroundColor: visualMode === 'mockup' && node.style?.visual?.fill?.type === 'solid' ? fillColor : 'rgba(245, 158, 11, 0.1)',
+            border: visualMode === 'mockup' && node.style?.visual?.stroke?.type === 'solid' 
               ? `${Math.max(strokeWidth, 1)}px solid ${strokeColor}` 
-              : 'none',
-            borderRadius: isCircle ? '50%' : `${(node.style?.visual?.borderRadius || 0) * scale}px`,
+              : '1px dashed var(--accent-warning)',
+            borderRadius: isCircle ? '50%' : `${(node.style?.visual?.borderRadius || 0) * currentScale}px`,
           }}
-          title={`${node.name} (${node.data?.shapeType})`}
+          onClick={handleElementClick}
         >
-          <span className="element-label">{node.name}</span>
+          {isSelected && <div className="selection-border" />}
+          <span className="blueprint-shape-label">⬤ {node.name}</span>
+          <span className="canvas-element-label">{node.name}</span>
+          {isSelected && (
+            <>
+              <div className="resize-handle nw" />
+              <div className="resize-handle ne" />
+              <div className="resize-handle sw" />
+              <div className="resize-handle se" />
+            </>
+          )}
         </div>
       );
     }
@@ -121,21 +184,37 @@ export default function WireframePreview({ designJson }) {
   };
 
   return (
-    <div className="wireframe-container">
-      <div>
-        <div
-          className="wireframe-canvas"
-          style={{
-            width: `${canvasWidth}px`,
-            height: `${canvasHeight}px`,
-            background: artboard.data?.backgroundColor || '#ffffff',
-          }}
-        >
-          {elements.map(renderElement)}
+    <div className="wireframe-container" onClick={() => onSelectNode && onSelectNode(null)}>
+      {/* Canvas Top Bar Controls */}
+      <div className="canvas-controls-header">
+        <div className="canvas-scale-display">
+          🔍 Zoom: {Math.round(zoom * 100)}%
         </div>
-        <div className="wireframe-dimension-label">
-          {artboard.width} × {artboard.height}
-          {artboard.data?.preset && ` • ${artboard.data.preset}`}
+        <div className="canvas-zoom-buttons">
+          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="btn-zoom-icon">-</button>
+          <button onClick={() => setZoom(1)} className="btn-zoom-icon">↺</button>
+          <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="btn-zoom-icon">+</button>
+        </div>
+        <div className="canvas-spec-badge">
+          Aspect Ratio: {artboard.width} × {artboard.height} ({artboard.data?.preset})
+        </div>
+      </div>
+
+      {/* Rulers and Board Area */}
+      <div className="canvas-editor-area">
+        {/* Dotted Editor Board */}
+        <div className="editor-board-grid">
+          <div
+            className="wireframe-canvas"
+            style={{
+              width: `${canvasWidth}px`,
+              height: `${canvasHeight}px`,
+              background: visualMode === 'mockup' ? (artboard.data?.backgroundColor || '#ffffff') : '#1a1a2e',
+              border: '1px solid var(--border-medium)',
+            }}
+          >
+            {elements.map(renderElement)}
+          </div>
         </div>
       </div>
     </div>

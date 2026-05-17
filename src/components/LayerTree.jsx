@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-export default function LayerTree({ designJson }) {
+export default function LayerTree({ designJson, selectedNodeId, onSelectNode }) {
   const artboard = useMemo(() => {
     if (!designJson?.nodes) return null;
     return Object.values(designJson.nodes).find(n => n.type === 'artboard');
@@ -34,34 +34,43 @@ export default function LayerTree({ designJson }) {
   };
 
   const formatPosition = (node) => {
-    return `(${Math.round(node.x)}, ${Math.round(node.y)}) ${Math.round(node.width)}×${Math.round(node.height)}`;
+    return `X:${Math.round(node.x)} Y:${Math.round(node.y)}  •  ${Math.round(node.width)}×${Math.round(node.height)}px`;
   };
 
   return (
     <div className="layers-container">
       {artboard && (
-        <div className="layer-item" style={{ marginBottom: '8px', background: 'var(--bg-glass-strong)' }}>
-          <div className={`layer-icon artboard`}>📐</div>
+        <div 
+          className={`layer-item artboard-item ${selectedNodeId === artboard.id ? 'active' : ''}`}
+          onClick={() => onSelectNode && onSelectNode(artboard.id)}
+        >
+          <div className="layer-icon artboard">📐</div>
           <div className="layer-info">
             <div className="layer-name">{artboard.name || 'Artboard'}</div>
             <div className="layer-meta">
-              {artboard.width} × {artboard.height} • {artboard.data?.preset || 'custom'}
+              {artboard.width} × {artboard.height}px • {artboard.data?.preset || 'custom'}
             </div>
           </div>
           <span className="layer-type-badge">artboard</span>
         </div>
       )}
       
+      <div className="layer-tree-header">Layers Hierarchy</div>
+
       <div className="layer-tree">
         {layers.map((node) => (
-          <div key={node.id} className="layer-item">
+          <div 
+            key={node.id} 
+            className={`layer-item ${selectedNodeId === node.id ? 'active' : ''}`}
+            onClick={() => onSelectNode && onSelectNode(node.id)}
+          >
             <div className={`layer-icon ${getTypeClass(node.type)}`}>
               {getTypeIcon(node.type)}
             </div>
             <div className="layer-info">
               <div className="layer-name">
                 {node.type === 'text' 
-                  ? (node.data?.content?.substring(0, 30) || node.name)
+                  ? (node.data?.content?.substring(0, 32) || node.name)
                   : node.name}
               </div>
               <div className="layer-meta">{formatPosition(node)}</div>
