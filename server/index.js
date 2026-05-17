@@ -103,7 +103,12 @@ app.post('/api/chat', async (req, res) => {
       parts: [{ text: `Here is the current design JSON:\n${JSON.stringify(designJson, null, 2)}\n\nUser instruction: "${message}"\n\nApply the instruction and return the complete updated JSON.` }]
     });
 
-    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    const modelsToTry = [
+      'gemini-3-flash-preview',
+      'gemini-2.5-flash',
+      'gemini-flash-latest',
+      'gemini-2.0-flash',
+    ];
     let lastError = null;
     let responseText = null;
     let selectedModelName = '';
