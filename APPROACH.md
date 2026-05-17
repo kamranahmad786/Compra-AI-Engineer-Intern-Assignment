@@ -2,6 +2,8 @@
 
 This document outlines the architectural patterns, logic, and engineering decisions implemented to build the AI Layout Agent proof of concept.
 
+🔗 **Live Production URL**: [compra-ai-engineer-intern-assignment.onrender.com](https://compra-ai-engineer-intern-assignment.onrender.com/)
+
 ---
 
 ## 🧭 Core Architecture Overview

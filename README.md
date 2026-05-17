@@ -4,6 +4,8 @@ An AI-driven chat-based layout agent that enables users to manipulate canvas coo
 
 Powered by **Gemini 2.0 Flash**, this proof of concept showcases natural layout reasoning, state-preserved conversational editing, live visual rendering, and structured JSON mutations.
 
+🔗 **Live Production URL**: [compra-ai-engineer-intern-assignment.onrender.com](https://compra-ai-engineer-intern-assignment.onrender.com/)
+
 ---
 
 ## 🚀 Key Features
