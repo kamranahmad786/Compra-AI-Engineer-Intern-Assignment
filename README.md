@@ -106,6 +106,22 @@ The backend analyzes differences between the initial design state and the new st
 
 ---
 
+## ☁️ 1-Click Unified Production Deployment
+
+The project has been configured for a **unified production build**. In production, the Express backend serves the pre-compiled React frontend static assets from the `dist` directory. This simplifies hosting, avoids CORS configuration issues entirely, and allows deployment to any Node.js container service in seconds.
+
+### Deploying to Render / Railway / Heroku
+
+1. **Connect your Repository**: Push your repository to GitHub, GitLab, or Bitbucket.
+2. **Create Web Service**: Set up a new Node.js Web Service.
+3. **Configure Settings**:
+   * **Build Command**: `npm install && npm run build` (This installs all workspace modules and compiles the React application into `/dist`).
+   * **Start Command**: `npm run start:prod` (This starts the production Express server on the assigned port, serving the React app and API endpoints concurrently).
+4. **Environment Variables**:
+   * Add `GEMINI_API_KEY` under the Environment tab (ensure to set your Google AI Studio API key).
+
+---
+
 ## 🧪 Example Instructions to Try
 
 *   `"Convert this design to 9:16 aspect ratio"`
