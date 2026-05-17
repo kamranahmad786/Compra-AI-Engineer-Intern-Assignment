@@ -66,13 +66,6 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 16384,
-      }
-    });
 
     // Build the conversation context
     const conversationParts = [];
@@ -110,12 +103,48 @@ app.post('/api/chat', async (req, res) => {
       parts: [{ text: `Here is the current design JSON:\n${JSON.stringify(designJson, null, 2)}\n\nUser instruction: "${message}"\n\nApply the instruction and return the complete updated JSON.` }]
     });
 
-    const chat = model.startChat({
-      history: conversationParts.slice(0, -1),
-    });
+    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    let lastError = null;
+    let responseText = null;
+    let selectedModelName = '';
 
-    const result = await chat.sendMessage(conversationParts[conversationParts.length - 1].parts[0].text);
-    const responseText = result.response.text();
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`[Layout Agent] Attempting layout transformation using: ${modelName}`);
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 16384,
+          }
+        });
+
+        const chat = model.startChat({
+          history: conversationParts.slice(0, -1),
+        });
+
+        const result = await chat.sendMessage(conversationParts[conversationParts.length - 1].parts[0].text);
+        responseText = result.response.text();
+        selectedModelName = modelName;
+        console.log(`[Layout Agent] Successfully generated layout with: ${modelName}`);
+        break; // Success, exit loop
+      } catch (err) {
+        console.warn(`[Layout Agent] Model ${modelName} failed:`, err.message || err);
+        lastError = err;
+      }
+    }
+
+    if (!responseText) {
+      const isQuotaError = lastError?.message?.includes('429') || lastError?.message?.includes('Quota') || lastError?.message?.includes('quota');
+      if (isQuotaError) {
+        return res.status(429).json({
+          error: 'Gemini API Free Tier Quota Exceeded. The free tier limits for this API key have been exhausted (or this API key is restricted in your region). Please check your billing details in Google AI Studio or configure a new API key in the .env file.'
+        });
+      }
+      return res.status(500).json({ 
+        error: `Failed to process layout instruction. Error: ${lastError?.message || lastError}` 
+      });
+    }
 
     // Parse the JSON from the response
     let updatedJson;
