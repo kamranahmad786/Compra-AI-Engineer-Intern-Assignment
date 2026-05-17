@@ -1,0 +1,60 @@
+# Compra AI Layout Agent: Architectural & Implementation Approach
+
+This document outlines the architectural patterns, logic, and engineering decisions implemented to build the AI Layout Agent proof of concept.
+
+---
+
+## 🧭 Core Architecture Overview
+
+The system is architected as a decoupled client-server application:
+
+```mermaid
+graph TD
+    Client[React Client Sandbox] <-->|JSON + Conversational Messages| Server[Express Server]
+    Server <-->|System Prompt + Instructions| Gemini[Gemini 2.0 Flash]
+```
+
+### 1. The Design Schema Concept
+The design schema separates absolute sizing coordinates from normalized coordinate ratios:
+*   **Absolute coordinates (`x`, `y`, `width`, `height`)** are utilized by the wireframe canvas renderer and layer tree panel to visually display components.
+*   **Normalized ratios (`nx`, `ny`, `nw`, `nh`)** represent coordinate factors relative to the parent artboard's current width and height. E.g., `nx = x / artboard_width`.
+This distinction is vital for aspect ratio changes (such as 9:16 layout conversion).
+
+---
+
+## 🧠 LLM Integration Strategy
+
+Rather than writing custom regex parsing libraries or manual rule engines (which are fragile and scale poorly), we delegated the layout reasoning to **Gemini 2.0 Flash**.
+
+### 1. Robust System Prompt Engineering
+The system prompt establishes the following constraints:
+*   **Semantic Roles Understanding**: Instructs the agent on what each element represents (e.g. background image is a canvas backdrop, circle + overlay texts represent a yellow discount badge, vector stars represent a rating system, and the sofa graphic is the main product).
+*   **Mathematical Synchronization**: Strict guidelines enforcing that whenever absolute dimensions are changed, the normalized ratio values must be recalculated to remain consistent.
+*   **Spatial Vocabulary**: Clear rules mapping natural language keys to geometric operations:
+    *   *"Move higher" / "Move to the top"* ➔ Decrease `y` values.
+    *   *"Move lower" / "Move to the bottom"* ➔ Increase `y` values.
+    *   *"Keep product large"* ➔ Preserve or scale the dimensions of the sofa graphic (`img_1778489515746_17`) relative to the artboard.
+*   **Strict JSON Output**: Restricts the model to returning *only* valid JSON.
+
+### 2. Conversational Context Continuity
+For follow-up support (e.g. user says: *"Move the headline to the top"*, then *"Make it smaller"*), the application preserves history by sending past conversations as structural roles (`user` and `model`) back to the Gemini session. This lets the agent easily resolve references like "it" to the correct node target.
+
+---
+
+## 🎨 Frontend Visual Sandbox
+
+The frontend was engineered to offer a high-fidelity visual experience:
+1.  **Wireframe Preview**: Live SVG/CSS canvas rendering elements from the nodes dictionary. Text colors, sizing ratios, fonts, shapes (circles), backgrounds, rating stars, and products dynamically scale to fit preview constraints.
+2.  **Layer Tree**: Shows real-time alignment, coordinate bounds, layer hierarchy, and types (artboard vs image vs text vs shape).
+3.  **Highlighted JSON Inspector**: Instantly displays the new layout state after modifications with rich theme token syntax styling.
+
+---
+
+## ⚡ Differential Change Detection
+
+To make the AI agent feel alive and responsive, the Express server performs a **differential coordinate delta check** between the original and modified JSON nodes. 
+If an element is moved, resized, or restyled, the backend logs a friendly message, such as:
+*   *Moved "Luxury Comfort" from (133, 175) to (133, 50)*
+*   *Changed "Instagram Post" dimensions to 1080×1920*
+
+This is displayed directly inside the chat bubbles as clear visual success indicators!
